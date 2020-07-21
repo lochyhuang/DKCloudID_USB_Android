@@ -567,9 +567,31 @@ public class MainActivity extends Activity {
                         while (true) {
                             if ( (cloudReturnByte == null) || (cloudReturnByte.length < 2)
                                     || ((cloudReturnByte[0] != 0x03) && (cloudReturnByte[0] != 0x04)) ) {
+
                                 msgBuffer.delete(0, msgBuffer.length());
-                                msgBuffer.append("解析超时").append("\r\n");
+                                if ( cloudReturnByte == null ) {
+                                    msgBuffer.append("服务器返回数据为空").append("\r\n");
+                                }
+                                else if (cloudReturnByte[0] == 0x05) {
+                                    msgBuffer.append("解析失败, 请重新读卡").append("\r\n");
+                                }
+                                else if (cloudReturnByte[0] == 0x06) {
+                                    msgBuffer.append("该设备未授权, 请联系www.derkiot.com获取授权").append("\r\n");
+                                }
+                                else if (cloudReturnByte[0] == 0x07) {
+                                    msgBuffer.append("该设备已被禁用, 请联系www.derkiot.com").append("\r\n");
+                                }
+                                else if (cloudReturnByte[0] == 0x08) {
+                                    msgBuffer.append("该账号已被禁用, 请联系www.derkiot.com").append("\r\n");
+                                }
+                                else if (cloudReturnByte[0] == 0x09) {
+                                    msgBuffer.append("余额不足, 请联系www.derkiot.com充值").append("\r\n");
+                                }
+                                else {
+                                    msgBuffer.append("未知错误").append("\r\n");
+                                }
                                 handler.sendEmptyMessage(0);
+                                dkCloudID.Close();
                                 return false;
                             }
                             else if (cloudReturnByte.length > 300) {
@@ -614,6 +636,7 @@ public class MainActivity extends Activity {
                                     });
                                 }
                                 else {
+                                    dkCloudID.Close();
                                     return false;
                                 }
                                 break;
@@ -624,6 +647,7 @@ public class MainActivity extends Activity {
                                 msgBuffer.delete(0, msgBuffer.length());
                                 msgBuffer.append("解析出错：").append(String.format("%d", ((nfcReturnBytes[0] & 0xff) << 8) | (nfcReturnBytes[1] & 0xff) )).append("\r\n");
                                 handler.sendEmptyMessage(0);
+                                dkCloudID.Close();
                                 return false;
                             }
 
