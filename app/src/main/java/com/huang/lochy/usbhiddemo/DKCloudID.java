@@ -25,7 +25,7 @@ public class DKCloudID {
         client = new Socket();
         SocketAddress socketAddress = new InetSocketAddress(ip1, port);
         try {
-            client.connect(socketAddress, 300);
+            client.connect(socketAddress, 500);
         }catch (IOException e) {
             //连接服务器失败
             System.err.println("连接服务器失败：" + ip1 + ":" + port);
@@ -35,7 +35,7 @@ public class DKCloudID {
             client = new Socket();
             socketAddress = new InetSocketAddress(ip2, port);
             try {
-                client.connect(socketAddress, 300);
+                client.connect(socketAddress, 500);
             }catch (IOException e2) {
                 Close();
                 //连接备用服务器失败
@@ -47,7 +47,7 @@ public class DKCloudID {
 
         try {
             client.setTcpNoDelay(true);
-            client.setSoTimeout(2000);
+            client.setSoTimeout(2500);
 
             //向服务器端传递信息
             out = client.getOutputStream();

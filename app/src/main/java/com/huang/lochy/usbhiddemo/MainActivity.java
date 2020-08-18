@@ -716,8 +716,6 @@ public class MainActivity extends Activity {
                                 cpuCardType = "借记卡";
                             }
 
-
-
                             //读交易记录
                             System.out.println("发送APDU指令-读10条交易记录");
                             for (int i = 1; i <= 10; i++) {
@@ -781,180 +779,135 @@ public class MainActivity extends Activity {
 
                 final Ntag21x ntag21x = (Ntag21x) usbNfcDevice.getCard();
                 if (ntag21x != null) {
+                    msgBuffer.delete(0, msgBuffer.length());
+                    msgBuffer.append("寻到Ultralight卡 ->UID:").append(ntag21x.uidToString()).append("\r\n");
+                    handler.sendEmptyMessage(0);
                     try {
-                        int cnt = 0;
-                        do {
-                            byte[] writeBytes = {(byte) 0xbd, 0x11, 0x00, 0x00, 0x00, 0x04, (byte) 0xd2, 0x01, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
-//                        Arrays.fill(writeBytes, (byte) 0x30);
-                            msgBuffer.append("开始发送校验指令").append("\r\n");
-                            handler.sendEmptyMessage(0);
-                            msgBuffer.append("发送数据:").append("\r\n");
-                            msgBuffer.append(StringTool.byteHexToSting(writeBytes)).append("\r\n");
-                            byte[] recv = ntag21x.transceive(writeBytes);
-                            if (recv.length > 0) {
-                                msgBuffer.append("接收数据:").append("\r\n");
-                                msgBuffer.append(StringTool.byteHexToSting(recv)).append("\r\n");
-                                handler.sendEmptyMessage(0);
-                            } else {
-                                msgBuffer.append("发送数据失败！").append("\r\n");
-                            }
-
-                            byte[] writeBytes2 = {(byte) 0xbd, 0x40, 0x00, 0x01, 0x5f, 0x02, (byte) 0xd5, (byte) 0xbb, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-                            msgBuffer.append("发送数据:").append("\r\n");
-                            msgBuffer.append(StringTool.byteHexToSting(writeBytes2)).append("\r\n");
-                            byte[] recv2 = ntag21x.transceive(writeBytes2);
-                            if (recv2.length > 0) {
-                                msgBuffer.append("接收数据:").append("\r\n");
-                                msgBuffer.append(StringTool.byteHexToSting(recv2)).append("\r\n");
-                                handler.sendEmptyMessage(0);
-                            } else {
-                                msgBuffer.append("发送数据失败！").append("\r\n");
-                            }
-                        }while (cnt++ < 10);
-
-                        try {
-                            Thread.sleep(5000);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    } catch (CardNoResponseException e) {
-                        e.printStackTrace();
-                        msgBuffer.append(e.getMessage()).append("\r\n");
-                        //showReadWriteDialog("正在写入数据", 0);
+                        //读写单个块Demo
+                        msgBuffer.append("开始读取块0数据：\r\n");
                         handler.sendEmptyMessage(0);
-                        return false;
-                    }
+                        byte[] readTempBytes = ntag21x.read((byte) 0);
+                        msgBuffer.append("返回：").append(StringTool.byteHexToSting(readTempBytes)).append("\r\n");
+                        handler.sendEmptyMessage(0);
 
-//                    msgBuffer.delete(0, msgBuffer.length());
-//                    msgBuffer.append("寻到Ultralight卡 ->UID:").append(ntag21x.uidToString()).append("\r\n");
-//                    handler.sendEmptyMessage(0);
-//                    try {
-//                        //读写单个块Demo
-//                        msgBuffer.append("开始读取块0数据：\r\n");
+//                        //读写文本Demo，不带进度回调
+//                        msgBuffer.append("开始写入文本：\r\n");
 //                        handler.sendEmptyMessage(0);
-//                        byte[] readTempBytes = ntag21x.read((byte) 0);
-//                        msgBuffer.append("返回：").append(StringTool.byteHexToSting(readTempBytes)).append("\r\n");
-//                        handler.sendEmptyMessage(0);
-//
-////                        //读写文本Demo，不带进度回调
-////                        msgBuffer.append("开始写入文本：\r\n");
-////                        handler.sendEmptyMessage(0);
-////                        boolean isSuc = ntag21x.NdefTextWrite(writeText);
-////                        if (isSuc) {
-////                            msgBuffer.append("写数据成功！").append("\r\n");
-////                            handler.sendEmptyMessage(0);
-////                            msgBuffer.append("开始读取文本").append("\r\n");
-////                            handler.sendEmptyMessage(0);
-////                            String text = ntag21x.NdefTextRead();
-////                            msgBuffer.append("读取成功：\r\n").append(text).append("\r\n");
-////                            handler.sendEmptyMessage(0);
-////                        }
-////                        else {
-////                            msgBuffer.append("写文本失败！").append("\r\n");
-////                            showReadWriteDialog("正在读取数据", 0);
-////                        }
-//
-//                        //读写文本Demo，带进度回调
-////                        msgBuffer.append("开始写入文本：\r\n");
-////                        showReadWriteDialog("正在写入文本", 1);
-////                        showReadWriteDialog("正在写入文本", 1);
-////                        boolean isSuc = ntag21x.NdefTextWriteWithScheduleCallback(writeText, new Ntag21x.onReceiveScheduleListener() {
-////                            @Override
-////                            public void onReceiveSchedule(int rate) {
-////                                //显示进度，写入过程会不断回调到此
-////                                showReadWriteDialog("正在写入文本", rate);
-////                            }
-////                        });
-////
-////                        if (isSuc) {
-////                            msgBuffer.append("写数据成功！").append("\r\n");
-////                            handler.sendEmptyMessage(0);
-////                            msgBuffer.append("开始读取文本").append("\r\n");
-////                            handler.sendEmptyMessage(0);
-////                            String text = ntag21x.NdefTextReadWithScheduleCallback(new Ntag21x.onReceiveScheduleListener() {
-////                                @Override
-////                                public void onReceiveSchedule(int rate) {
-////                                    showReadWriteDialog("正在读取数据", rate);
-////                                }
-////                            });
-////                            msgBuffer.append("读取成功：\r\n").append(text).append("\r\n");
-////                            handler.sendEmptyMessage(0);
-////                        }
-////                        else {
-////                            msgBuffer.append("写文本失败！").append("\r\n");
-////                            showReadWriteDialog("正在读取数据", 0);
-////                        }
-//
-////                        //任意长度读写Demo,不带进度回调方式
-////                        byte[] writeBytes = new byte[888];
-////                        Arrays.fill(writeBytes, (byte) 0xAA);
-////                        msgBuffer.append("开始写888个字节数据：0x30").append("\r\n");
-////                        handler.sendEmptyMessage(0);
-////                        boolean isSuc = ntag21x.longWrite((byte) 4, writeBytes);
-////                        if (isSuc) {
-////                            msgBuffer.append("写数据成功！").append("\r\n");
-////                            handler.sendEmptyMessage(0);
-////                            msgBuffer.append("开始读888个字节数据").append("\r\n");
-////                            handler.sendEmptyMessage(0);
-////                            readTempBytes = ntag21x.longRead((byte) 4, (byte) (888 / 4));
-////                            msgBuffer.append("读取成功：\r\n").append(StringTool.byteHexToSting(readTempBytes)).append("\r\n");
-////                            handler.sendEmptyMessage(0);
-////                        }
-////                        else {
-////                            msgBuffer.append("写数据失败！").append("\r\n");
-////                            handler.sendEmptyMessage(0);
-////                        }
-//
-//                        //任意长度读写Demo，带进度回调
-//                        showReadWriteDialog("正在写入数据", 1);
-//                        showReadWriteDialog("正在写入数据", 1);
-//                        byte[] writeBytes = new byte[888];
-//                        Arrays.fill(writeBytes, (byte) 0x30);
-//                        msgBuffer.append("开始写888个字节数据：0x30").append("\r\n");
-//                        handler.sendEmptyMessage(0);
-//                        boolean isSuc = ntag21x.longWriteWithScheduleCallback((byte) 4, writeBytes, new Ntag21x.onReceiveScheduleListener() {
-//                            @Override
-//                            public void onReceiveSchedule(int rate) {
-//                                showReadWriteDialog("正在写入数据", rate);
-//                            }
-//                        });
+//                        boolean isSuc = ntag21x.NdefTextWrite(writeText);
 //                        if (isSuc) {
 //                            msgBuffer.append("写数据成功！").append("\r\n");
 //                            handler.sendEmptyMessage(0);
-//                            msgBuffer.append("开始读888个字节数据").append("\r\n");
+//                            msgBuffer.append("开始读取文本").append("\r\n");
 //                            handler.sendEmptyMessage(0);
-//                            readTempBytes = ntag21x.longReadWithScheduleCallback((byte) 4, (byte) (888 / 4), new Ntag21x.onReceiveScheduleListener() {
+//                            String text = ntag21x.NdefTextRead();
+//                            msgBuffer.append("读取成功：\r\n").append(text).append("\r\n");
+//                            handler.sendEmptyMessage(0);
+//                        }
+//                        else {
+//                            msgBuffer.append("写文本失败！").append("\r\n");
+//                            showReadWriteDialog("正在读取数据", 0);
+//                        }
+
+                        //读写文本Demo，带进度回调
+//                        msgBuffer.append("开始写入文本：\r\n");
+//                        showReadWriteDialog("正在写入文本", 1);
+//                        showReadWriteDialog("正在写入文本", 1);
+//                        boolean isSuc = ntag21x.NdefTextWriteWithScheduleCallback(writeText, new Ntag21x.onReceiveScheduleListener() {
+//                            @Override
+//                            public void onReceiveSchedule(int rate) {
+//                                //显示进度，写入过程会不断回调到此
+//                                showReadWriteDialog("正在写入文本", rate);
+//                            }
+//                        });
+//
+//                        if (isSuc) {
+//                            msgBuffer.append("写数据成功！").append("\r\n");
+//                            handler.sendEmptyMessage(0);
+//                            msgBuffer.append("开始读取文本").append("\r\n");
+//                            handler.sendEmptyMessage(0);
+//                            String text = ntag21x.NdefTextReadWithScheduleCallback(new Ntag21x.onReceiveScheduleListener() {
 //                                @Override
 //                                public void onReceiveSchedule(int rate) {
 //                                    showReadWriteDialog("正在读取数据", rate);
 //                                }
 //                            });
+//                            msgBuffer.append("读取成功：\r\n").append(text).append("\r\n");
+//                            handler.sendEmptyMessage(0);
+//                        }
+//                        else {
+//                            msgBuffer.append("写文本失败！").append("\r\n");
+//                            showReadWriteDialog("正在读取数据", 0);
+//                        }
+
+//                        //任意长度读写Demo,不带进度回调方式
+//                        byte[] writeBytes = new byte[888];
+//                        Arrays.fill(writeBytes, (byte) 0xAA);
+//                        msgBuffer.append("开始写888个字节数据：0x30").append("\r\n");
+//                        handler.sendEmptyMessage(0);
+//                        boolean isSuc = ntag21x.longWrite((byte) 4, writeBytes);
+//                        if (isSuc) {
+//                            msgBuffer.append("写数据成功！").append("\r\n");
+//                            handler.sendEmptyMessage(0);
+//                            msgBuffer.append("开始读888个字节数据").append("\r\n");
+//                            handler.sendEmptyMessage(0);
+//                            readTempBytes = ntag21x.longRead((byte) 4, (byte) (888 / 4));
 //                            msgBuffer.append("读取成功：\r\n").append(StringTool.byteHexToSting(readTempBytes)).append("\r\n");
-//                            showReadWriteDialog("正在读取数据", 100);
+//                            handler.sendEmptyMessage(0);
 //                        }
 //                        else {
 //                            msgBuffer.append("写数据失败！").append("\r\n");
-//                            showReadWriteDialog("正在读取数据", 0);
+//                            handler.sendEmptyMessage(0);
 //                        }
-//
-//
-////                        msgBuffer.append("开始读100个字节数据").append("\r\n");
-////                        handler.sendEmptyMessage(0);
-////                        readTempBytes = ntag21x.longReadWithScheduleCallback((byte) 4, (byte) (100 / 4), new Ntag21x.onReceiveScheduleListener() {
-////                            @Override
-////                            public void onReceiveSchedule(int rate) {
-////                                showReadWriteDialog("正在读取数据", rate);
-////                            }
-////                        });
-////                        msgBuffer.append("读取成功：\r\n").append(StringTool.byteHexToSting(readTempBytes)).append("\r\n");
-////                        showReadWriteDialog("正在读取数据", 100);
-//
-//                    } catch (CardNoResponseException e) {
-//                        e.printStackTrace();
-//                        msgBuffer.append(e.getMessage()).append("\r\n");
-//                        showReadWriteDialog("正在写入数据", 0);
-//                        return false;
-//                    }
+
+                        //任意长度读写Demo，带进度回调
+                        showReadWriteDialog("正在写入数据", 1);
+                        showReadWriteDialog("正在写入数据", 1);
+                        byte[] writeBytes = new byte[888];
+                        Arrays.fill(writeBytes, (byte) 0x30);
+                        msgBuffer.append("开始写888个字节数据：0x30").append("\r\n");
+                        handler.sendEmptyMessage(0);
+                        boolean isSuc = ntag21x.longWriteWithScheduleCallback((byte) 4, writeBytes, new Ntag21x.onReceiveScheduleListener() {
+                            @Override
+                            public void onReceiveSchedule(int rate) {
+                                showReadWriteDialog("正在写入数据", rate);
+                            }
+                        });
+                        if (isSuc) {
+                            msgBuffer.append("写数据成功！").append("\r\n");
+                            handler.sendEmptyMessage(0);
+                            msgBuffer.append("开始读888个字节数据").append("\r\n");
+                            handler.sendEmptyMessage(0);
+                            readTempBytes = ntag21x.longReadWithScheduleCallback((byte) 4, (byte) (888 / 4), new Ntag21x.onReceiveScheduleListener() {
+                                @Override
+                                public void onReceiveSchedule(int rate) {
+                                    showReadWriteDialog("正在读取数据", rate);
+                                }
+                            });
+                            msgBuffer.append("读取成功：\r\n").append(StringTool.byteHexToSting(readTempBytes)).append("\r\n");
+                            showReadWriteDialog("正在读取数据", 100);
+                        }
+                        else {
+                            msgBuffer.append("写数据失败！").append("\r\n");
+                            showReadWriteDialog("正在读取数据", 0);
+                        }
+
+//                        msgBuffer.append("开始读100个字节数据").append("\r\n");
+//                        handler.sendEmptyMessage(0);
+//                        readTempBytes = ntag21x.longReadWithScheduleCallback((byte) 4, (byte) (100 / 4), new Ntag21x.onReceiveScheduleListener() {
+//                            @Override
+//                            public void onReceiveSchedule(int rate) {
+//                                showReadWriteDialog("正在读取数据", rate);
+//                            }
+//                        });
+//                        msgBuffer.append("读取成功：\r\n").append(StringTool.byteHexToSting(readTempBytes)).append("\r\n");
+//                        showReadWriteDialog("正在读取数据", 100);
+
+                    } catch (CardNoResponseException e) {
+                        e.printStackTrace();
+                        msgBuffer.append(e.getMessage()).append("\r\n");
+                        showReadWriteDialog("正在写入数据", 0);
+                        return false;
+                    }
                 }
                 break;
 //            case DeviceManager.CARD_TYPE_MIFARE:   //寻到Mifare卡
