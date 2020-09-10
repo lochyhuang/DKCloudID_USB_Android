@@ -62,6 +62,7 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.spec.SecretKeySpec;
 
+import static com.dk.usbNfc.DeviceManager.DeviceManager.CARD_TYPE_125K;
 import static com.dk.usbNfc.DeviceManager.DeviceManager.CARD_TYPE_ISO4443_B;
 
 public class MainActivity extends Activity {
@@ -272,14 +273,14 @@ public class MainActivity extends Activity {
 
             System.out.println("Activity接收到激活卡片回调：UID->" + StringTool.byteHexToSting(bytCardSn) + " ATS->" + StringTool.byteHexToSting(bytCarATS));
 
-//            if (cardType != CARD_TYPE_ISO4443_B) {
-//                if (msgBuffer.length() > 200) {
-//                    msgBuffer.delete(0, msgBuffer.length());
-//                }
-//                msgBuffer.append("\r\n寻到卡片 UID -> " + StringTool.byteHexToSting(bytCardSn));
-//                handler.sendEmptyMessage(0);
-//                return;
-//            }
+            if (cardType == CARD_TYPE_125K) {
+                if (msgBuffer.length() > 200) {
+                    msgBuffer.delete(0, msgBuffer.length());
+                }
+                msgBuffer.append("\r\n寻到125K ID卡 UID -> " + StringTool.byteHexToSting(bytCardSn));
+                handler.sendEmptyMessage(0);
+                return;
+            }
 
             final int cardTypeTemp = cardType;
             new Thread(new Runnable() {

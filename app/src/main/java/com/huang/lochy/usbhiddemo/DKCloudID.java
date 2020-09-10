@@ -11,6 +11,8 @@ import java.net.SocketAddress;
 import java.net.UnknownHostException;
 
 public class DKCloudID {
+    static private boolean isIp1OK = true;
+    private String current_ip = ip1;
     private final static String ip1 = "yjm1.dkcloudid.cn";
     private final static String ip2 = "www.dkcloudid.cn";
     private final static int port = 20006;
@@ -23,17 +25,18 @@ public class DKCloudID {
     public DKCloudID (){
         //创建一个客户端socket
         client = new Socket();
-        SocketAddress socketAddress = new InetSocketAddress(ip1, port);
+        current_ip = isIp1OK ? ip1 : ip2;
+        SocketAddress socketAddress = new InetSocketAddress(current_ip, port);
         try {
             client.connect(socketAddress, 500);
         }catch (IOException e) {
             //连接服务器失败
-            System.err.println("连接服务器失败：" + ip1 + ":" + port);
+            System.err.println("连接服务器失败：" + current_ip + ":" + port);
             e.printStackTrace();
 
             //连接到备用服务器
             client = new Socket();
-            socketAddress = new InetSocketAddress(ip2, port);
+            socketAddress = new InetSocketAddress(isIp1OK ? ip2 : ip1, port);
             try {
                 client.connect(socketAddress, 500);
             }catch (IOException e2) {
@@ -41,9 +44,12 @@ public class DKCloudID {
                 //连接备用服务器失败
                 System.err.println("连接服务器失败：" + ip2 + ":" + port);
                 e.printStackTrace();
+                isIp1OK = !isIp1OK;
                 return;
             }
         }
+
+        isIp1OK = !isIp1OK;
 
         try {
             client.setTcpNoDelay(true);

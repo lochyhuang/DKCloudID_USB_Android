@@ -75,6 +75,7 @@ public class DeviceManager {
     public final static byte  CARD_TYPE_ISO15693 = 0x05;        //卡片类型iso15693卡
     public final static byte  CARD_TYPE_ULTRALIGHT = 0x06;      //RF_TYPE_MF
     public final static byte  CARD_TYPE_DESFire = 0x07;         //DESFire卡
+    public final static byte  CARD_TYPE_125K = 11;              //125K id卡
 
     public final static byte  BUTTON_VALUE_SHORT_ENTER = 1;   //按键短按
     public final static byte  BUTTON_VALUE_LONG_ENTER = 2;    //按键长按按
@@ -435,6 +436,11 @@ public class DeviceManager {
                             atrBytes = new byte[rcvBytes.length - 1];
                             System.arraycopy(rcvBytes, 1, atrBytes, 0, rcvBytes.length - 1);
                             feliCa = new FeliCa(DeviceManager.this, uidBytes, atrBytes);
+                        }
+                        else if (cardType == CARD_TYPE_125K) {
+                            uidBytes = new byte[5];
+                            System.arraycopy(rcvBytes, 1, uidBytes, 0, 5);
+                            atrBytes = null;
                         }
                         else {
                             uidBytes = null;
