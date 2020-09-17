@@ -603,7 +603,7 @@ public class MainActivity extends Activity {
                                 }
 
                                 if (decrypted != null) {
-                                    final IDCardData idCardData = new IDCardData(decrypted, this);
+                                    final IDCardData idCardData = new IDCardData(decrypted);
                                     System.out.println("解析成功：" + idCardData.toString());
 
                                     msgBuffer.delete(0, msgBuffer.length());

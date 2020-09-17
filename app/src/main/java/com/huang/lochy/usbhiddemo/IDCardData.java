@@ -15,8 +15,6 @@ public class IDCardData {
     public final static int ID_TYPE_GAT = 2;      //身份证类型-港澳台居民身份证
     public final static int ID_TYPE_FOREIGN = 3;  //身份证类型-外国人永久居留身份证
 
-    private Context mContext;
-
     public String Name = null;                   // 姓名
     public String Sex = null;                    //性别
     public String Nation = null;                 //名族
@@ -33,8 +31,7 @@ public class IDCardData {
     public byte[] fingerprintBytes = null;       //指纹数据
     public int type = 0;
 
-    public IDCardData(byte[] idCardBytes, Context context){
-        mContext = context;
+    public IDCardData(byte[] idCardBytes){
 
         if (idCardBytes.length < 1295) {
             return;
