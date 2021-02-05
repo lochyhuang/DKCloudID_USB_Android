@@ -432,10 +432,17 @@ public class DeviceManager {
                             iso14443bCard = new Iso14443bCard(DeviceManager.this, uidBytes, atrBytes);
                         }
                         else if (cardType == CARD_TYPE_FELICA) {
-                            uidBytes = new byte[4];
-                            atrBytes = new byte[rcvBytes.length - 1];
-                            System.arraycopy(rcvBytes, 1, atrBytes, 0, rcvBytes.length - 1);
-                            feliCa = new FeliCa(DeviceManager.this, uidBytes, atrBytes);
+                            if (rcvBytes.length >= 9) {
+                                uidBytes = new byte[8];
+                                atrBytes = new byte[rcvBytes.length - 9];
+                                System.arraycopy(rcvBytes, 1, uidBytes, 0, 8);
+                                System.arraycopy(rcvBytes, 1, atrBytes, 0, rcvBytes.length - 9);
+                                feliCa = new FeliCa(DeviceManager.this, uidBytes, atrBytes);
+                            }
+                            else {
+                                uidBytes = null;
+                                atrBytes = null;
+                            }
                         }
                         else if (cardType == CARD_TYPE_125K) {
                             uidBytes = new byte[5];

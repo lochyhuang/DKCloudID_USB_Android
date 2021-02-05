@@ -277,8 +277,13 @@ public class MainActivity extends Activity {
                 if (msgBuffer.length() > 200) {
                     msgBuffer.delete(0, msgBuffer.length());
                 }
-                msgBuffer.append("\r\n寻到125K ID卡 UID -> " + StringTool.byteHexToSting(bytCardSn));
-                handler.sendEmptyMessage(0);
+
+                if (bytCardSn != null && bytCardSn.length == 5) {
+                    int cardSn = ((bytCardSn[1] & 0xff) << 24) | ((bytCardSn[2] & 0xff) << 16) | ((bytCardSn[3] & 0xff) << 8) | (bytCardSn[4] & 0xff);
+                    String cardSnString = String.format("%010d", cardSn);
+                    msgBuffer.append("\r\n寻到125K ID卡 UID -> " + cardSnString);
+                    handler.sendEmptyMessage(0);
+                }
                 return;
             }
 
@@ -543,8 +548,14 @@ public class MainActivity extends Activity {
             case DeviceManager.CARD_TYPE_ISO4443_B:  //寻到 B cpu卡
                 final Iso14443bCard iso14443bCard = (Iso14443bCard) usbNfcDevice.getCard();
                 if (iso14443bCard != null) {
+                    byte[] uidBytes = null;
+                    try {
+                        uidBytes = iso14443bCard.transceive(new byte[] {0x00, 0x36, 0x00, 0x00, 0x08});
+                    } catch (CardNoResponseException e) {
+                        e.printStackTrace();
+                    }
                     msgBuffer.delete(0, msgBuffer.length());
-                    msgBuffer.append("寻到ISO14443-B卡->UID:(身份证发送0036000008指令获取UID)\r\n");
+                    msgBuffer.append("寻到ISO14443-B卡->UID:(身份证发送0036000008指令获取UID)\r\n" + StringTool.byteHexToSting(uidBytes));
                     handler.sendEmptyMessage(0);
 
                     SamVIdCard samVIdCard = new SamVIdCard(usbNfcDevice);
@@ -756,18 +767,19 @@ public class MainActivity extends Activity {
                 FeliCa feliCa = (FeliCa) usbNfcDevice.getCard();
                 if (feliCa != null) {
                     msgBuffer.delete(0, msgBuffer.length());
-                    msgBuffer.append("读取服务008b中数据块0000的数据：\r\n");
+                    msgBuffer.append("寻到feliCa ->UID:").append(feliCa.uidToString()).append("\r\n");
                     handler.sendEmptyMessage(0);
-                    byte[] pServiceList = {(byte) 0x8b, 0x00};
-                    byte[] pBlockList = {0x00, 0x00, 0x00};
-                    try {
-                        byte[] pBlockData = feliCa.read((byte) 1, pServiceList, (byte) 1, pBlockList);
-                        msgBuffer.append(StringTool.byteHexToSting(pBlockData)).append("\r\n");
-                        handler.sendEmptyMessage(0);
-                    } catch (CardNoResponseException e) {
-                        e.printStackTrace();
-                        return false;
-                    }
+
+//                    byte[] pServiceList = {(byte) 0x8b, 0x00};
+//                    byte[] pBlockList = {0x00, 0x00, 0x00};
+//                    try {
+//                        byte[] pBlockData = feliCa.read((byte) 1, pServiceList, (byte) 1, pBlockList);
+//                        msgBuffer.append(StringTool.byteHexToSting(pBlockData)).append("\r\n");
+//                        handler.sendEmptyMessage(0);
+//                    } catch (CardNoResponseException e) {
+//                        e.printStackTrace();
+//                        return false;
+//                    }
                 }
                 break;
             case DeviceManager.CARD_TYPE_ULTRALIGHT: //寻到Ultralight卡
@@ -1046,40 +1058,40 @@ public class MainActivity extends Activity {
                     handler.sendEmptyMessage(0);
                     try {
                         //读写单个块Demo
-                        msgBuffer.append("写数据01020304到块4").append("\r\n");
-                        handler.sendEmptyMessage(0);
-                        boolean isSuc = iso15693Card.write((byte)4, new byte[] {0x01, 0x02, 0x03, 0x04});
-                        if (isSuc) {
-                            msgBuffer.append("写数据成功！").append("\r\n");
-                            handler.sendEmptyMessage(0);
-                        }
-                        else {
-                            msgBuffer.append("写数据失败！").append("\r\n");
-                            handler.sendEmptyMessage(0);
-                        }
+//                        msgBuffer.append("写数据01020304到块4").append("\r\n");
+//                        handler.sendEmptyMessage(0);
+//                        boolean isSuc = iso15693Card.write((byte)4, new byte[] {0x01, 0x02, 0x03, 0x04});
+//                        if (isSuc) {
+//                            msgBuffer.append("写数据成功！").append("\r\n");
+//                            handler.sendEmptyMessage(0);
+//                        }
+//                        else {
+//                            msgBuffer.append("写数据失败！").append("\r\n");
+//                            handler.sendEmptyMessage(0);
+//                        }
                         msgBuffer.append("读块4数据").append("\r\n");
                         handler.sendEmptyMessage(0);
                         byte[] bytes = iso15693Card.read((byte) 4);
                         msgBuffer.append("块4数据：").append(StringTool.byteHexToSting(bytes)).append("\r\n");
                         handler.sendEmptyMessage(0);
 
-                        //读写多个块Demo
-                        msgBuffer.append("写数据0102030405060708到块5、6").append("\r\n");
-                        handler.sendEmptyMessage(0);
-                        isSuc = iso15693Card.writeMultiple((byte)5, (byte)2, new byte[] {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08});
-                        if (isSuc) {
-                            msgBuffer.append("写数据成功！").append("\r\n");
-                            handler.sendEmptyMessage(0);
-                        }
-                        else {
-                            msgBuffer.append("写数据失败！").append("\r\n");
-                            handler.sendEmptyMessage(0);
-                        }
-                        msgBuffer.append("读块5、6数据").append("\r\n");
-                        handler.sendEmptyMessage(0);
-                        bytes = iso15693Card.ReadMultiple((byte) 5, (byte)2);
-                        msgBuffer.append("块5、6数据：").append(StringTool.byteHexToSting(bytes)).append("\r\n");
-                        handler.sendEmptyMessage(0);
+//                        //读写多个块Demo
+//                        msgBuffer.append("写数据0102030405060708到块5、6").append("\r\n");
+//                        handler.sendEmptyMessage(0);
+//                        isSuc = iso15693Card.writeMultiple((byte)5, (byte)2, new byte[] {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08});
+//                        if (isSuc) {
+//                            msgBuffer.append("写数据成功！").append("\r\n");
+//                            handler.sendEmptyMessage(0);
+//                        }
+//                        else {
+//                            msgBuffer.append("写数据失败！").append("\r\n");
+//                            handler.sendEmptyMessage(0);
+//                        }
+//                        msgBuffer.append("读块5、6数据").append("\r\n");
+//                        handler.sendEmptyMessage(0);
+//                        bytes = iso15693Card.ReadMultiple((byte) 5, (byte)2);
+//                        msgBuffer.append("块5、6数据：").append(StringTool.byteHexToSting(bytes)).append("\r\n");
+//                        handler.sendEmptyMessage(0);
                     } catch (CardNoResponseException e) {
                         e.printStackTrace();
                         return false;

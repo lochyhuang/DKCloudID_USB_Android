@@ -10,7 +10,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by Administrator on 2017/5/15.
  */
-
 public class UsbNfcDevice extends DeviceManager{
     final static int DEVICE_NO_RESPONSE_TIME = 500;
 
