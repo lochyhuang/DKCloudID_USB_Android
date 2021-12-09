@@ -87,130 +87,39 @@ dependencies {
 	
 	//读写卡Demo
     private synchronized boolean readWriteCardDemo(int cardType) {
-        switch (cardType) {
-            case DeviceManager.CARD_TYPE_ISO4443_B:  //寻到 B cpu卡、身份证
-                final Iso14443bCard iso14443bCard = (Iso14443bCard) usbNfcDevice.getCard();
-                if (iso14443bCard != null) {
-                    msgBuffer.delete(0, msgBuffer.length());
-                    msgBuffer.append("寻到身份证，正在解析，请勿移动身份证！").append("\r\n");
-                    handler.sendEmptyMessage(0);
-                    myTTS.speak("正在读卡，请勿移动身份证");
+        if (cardType == DeviceManager.CARD_TYPE_ISO4443_B) {  //寻到 B cpu卡、身份证
+			final Iso14443bCard iso14443bCard = (Iso14443bCard) usbNfcDevice.getCard();
+			if (iso14443bCard != null) {
+				SamVIdCard samVIdCard = new SamVIdCard(usbNfcDevice);
+				idCard = new IDCard(samVIdCard);
 
-                    SamVIdCard samVIdCard = new SamVIdCard(usbNfcDevice);
-                    idCard = new IDCard(samVIdCard);
+				int cnt = 0;
+				do {
+					try {
+						/**
+						 * 获取身份证数据
+						 * 注意：此方法为同步阻塞方式，需要一定时间才能返回身份证数据，期间身份证不能离开读卡器！
+						 */
+						IDCardData idCardData = idCard.getIDCardData();
 
-                    time_start = System.currentTimeMillis();
-                    int cnt = 0;
-                    do {
-                        try {
-                            /**
-                             * 获取身份证数据，带进度回调，如果不需要进度回调可以去掉进度回调参数或者传入null
-                             * 注意：此方法为同步阻塞方式，需要一定时间才能返回身份证数据，期间身份证不能离开读卡器！
-                             */
-                            IDCardData idCardData = idCard.getIDCardData(new IDCard.onReceiveScheduleListener() {
-                                @Override
-                                public void onReceiveSchedule(int rate) {  //读取进度回调
-                                    showReadWriteDialog("正在读取身份证信息,请不要移动身份证", rate);
-                                    if (rate == 100) {
-                                        time_end = System.currentTimeMillis();
-                                        /**
-                                         * 这里已经完成读卡，可以开身份证了，在此提示用户读取成功或者打开蜂鸣器提示可以拿开身份证了
-                                         */
-
-                                        myTTS.speak("读取成功");
-                                    }
-                                }
-                            });
-
-                            /**
-                             * 显示身份证数据
-                             */
-                            showIDCardData(idCardData);
-                            //返回读取成功
-                            return true;
-                        } catch (DKCloudIDException e) {   //服务器返回异常，重复5次解析
-                            e.printStackTrace();
-
-                            //显示错误信息
-                            msgBuffer.delete(0, msgBuffer.length());
-                            msgBuffer.append(e.getMessage()).append("\r\n");
-                            handler.sendEmptyMessage(0);
-                        }
-                        catch (CardNoResponseException e) {    //卡片读取异常，直接退出，需要重新读卡
-                            e.printStackTrace();
-
-                            //显示错误信息
-                            msgBuffer.delete(0, msgBuffer.length());
-                            msgBuffer.append(e.getMessage()).append("\r\n");
-                            handler.sendEmptyMessage(0);
-                            //返回读取失败
-                            myTTS.speak("请不要移动身份证");
-                            return false;
-                        } finally {
-                            //读卡结束关闭进度条显示
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    if (readWriteDialog.isShowing()) {
-                                        readWriteDialog.dismiss();
-                                    }
-                                    readWriteDialog.setProgress(0);
-                                }
-                            });
-                        }
-                    }while ( cnt++ < 5 );  //如果服务器返回异常则重复读5次直到成功
-
-                    myTTS.speak("读取失败，请重新刷卡");
-                }
-                break;
-            case DeviceManager.CARD_TYPE_ISO4443_A:   //寻到A CPU卡
-                final CpuCard cpuCard = (CpuCard) usbNfcDevice.getCard();
-                if (cpuCard != null) {
-                    msgBuffer.delete(0, msgBuffer.length());
-                    msgBuffer.append("寻到CPU卡->UID:").append(cpuCard.uidToString()).append("\r\n");
-                    handler.sendEmptyMessage(0);
-                }
-                break;
-            case DeviceManager.CARD_TYPE_FELICA:  //寻到FeliCa
-                FeliCa feliCa = (FeliCa) usbNfcDevice.getCard();
-                if (feliCa != null) {
-                    msgBuffer.delete(0, msgBuffer.length());
-                    msgBuffer.append("寻到feliCa ->UID:").append(feliCa.uidToString()).append("\r\n");
-                    handler.sendEmptyMessage(0);
-                }
-                break;
-            case DeviceManager.CARD_TYPE_ULTRALIGHT: //寻到Ultralight卡
-                String writeText = System.currentTimeMillis() + "专业非接触式智能卡读写器方案商！";
-                if (msgText.getText().toString().length() > 0) {
-                    writeText = msgText.getText().toString();
-                }
-
-                msgBuffer.delete(0, msgBuffer.length());
-
-                final Ntag21x ntag21x = (Ntag21x) usbNfcDevice.getCard();
-                if (ntag21x != null) {
-                    msgBuffer.delete(0, msgBuffer.length());
-                    msgBuffer.append("寻到Ultralight卡 ->UID:").append(ntag21x.uidToString()).append("\r\n");
-                    handler.sendEmptyMessage(0);
-                }
-                break;
-            case DeviceManager.CARD_TYPE_MIFARE:   //寻到Mifare卡
-                final Mifare mifare = (Mifare) usbNfcDevice.getCard();
-                if (mifare != null) {
-                    msgBuffer.delete(0, msgBuffer.length());
-                    msgBuffer.append("寻到Mifare卡->UID:").append(mifare.uidToString()).append("\r\n");
-                    handler.sendEmptyMessage(0);
-                }
-                break;
-            case DeviceManager.CARD_TYPE_ISO15693: //寻到15693卡
-                final Iso15693Card iso15693Card = (Iso15693Card) usbNfcDevice.getCard();
-                if (iso15693Card != null) {
-                    msgBuffer.delete(0, msgBuffer.length());
-                    msgBuffer.append("寻到15693卡->UID:").append(iso15693Card.uidToString()).append("\r\n");
-                    handler.sendEmptyMessage(0);
-                }
-                break;
+						/**
+						 * 显示身份证数据
+						 */
+						showIDCardData(idCardData);
+						
+						//返回读取成功
+						return true;
+					} catch (DKCloudIDException e) {   //服务器返回异常，重复5次解析
+						e.printStackTrace();
+					}
+					catch (CardNoResponseException e) {    //卡片读取异常，直接退出，需要重新读卡
+						e.printStackTrace();
+						return false;
+					}
+				}while ( cnt++ < 5 );  //如果服务器返回异常则重复读5次直到成功
+			}
         }
-        return true;
+		
+        return false;
     }
 ```
