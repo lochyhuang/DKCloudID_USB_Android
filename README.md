@@ -25,7 +25,7 @@ dependencies {
 }
 ```
 
- **Step 3. 在AndroidManifest.xml中添加网络权限和USB访问权限
+ **Step 3. 在AndroidManifest.xml中添加网络权限和USB访问权限** 
  
  ```
 
@@ -36,7 +36,7 @@ dependencies {
 ```
  
  
- **Step 4. 初始化UsbNfcDevice初始化
+ **Step 4. 初始化UsbNfcDevice初始化** 
 
 ```
 
@@ -44,7 +44,7 @@ dependencies {
 	usbNfcDevice.setCallBack(deviceManagerCallback);
 ```
 
- **Step 5. 添加读卡回调和读卡代码
+ **Step 5. 添加读卡回调和读卡代码** 
 
 ```
 
