@@ -44,17 +44,31 @@
         android:id="@+id/closeAutoSearchCard"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="关自动寻卡"
         android:layout_alignBaseline="@+id/openAutoSearchCard"
-        android:layout_alignBottom="@+id/openAutoSearchCard"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true" />
+        android:layout_alignParentBottom="true"
+        android:layout_marginEnd="1dp"
+        android:layout_marginRight="218dp"
+        android:layout_marginBottom="1dp"
+        android:layout_toStartOf="@+id/ota_button"
+        android:text="关自动寻卡" />
 
     <Button
         android:id="@+id/openAutoSearchCard"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="开自动寻卡"
         android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true" />
+        android:layout_marginStart="0dp"
+        android:layout_marginBottom="-1dp"
+        android:layout_toEndOf="@+id/clearButton"
+        android:text="开自动寻卡" />
+
+    <Button
+        android:id="@+id/ota_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="1dp"
+        android:text="固件升级" />
 </RelativeLayout>

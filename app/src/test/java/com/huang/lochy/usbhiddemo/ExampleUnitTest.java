@@ -2,8 +2,8 @@ package com.huang.lochy.usbhiddemo;
 
 import org.junit.Test;
 
-import io.github.yedaxia.apidocs.Docs;
-import io.github.yedaxia.apidocs.DocsConfig;
+//import io.github.yedaxia.apidocs.Docs;
+//import io.github.yedaxia.apidocs.DocsConfig;
 
 import static org.junit.Assert.*;
 

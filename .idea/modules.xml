@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/USBHIDDemo_V2.0(2020.07.26)_SAM_V.iml" filepath="$PROJECT_DIR$/.idea/modules/USBHIDDemo_V2.0(2020.07.26)_SAM_V.iml" group="USBHIDDemo_V2.0(2020.07.26)_SAM_V" />
-      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" group="USBHIDDemo V2.0(2020.07.26)_SAM_V/app" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/DKCloudID_USB_Android_V4.0(20211209).iml" filepath="$PROJECT_DIR$/.idea/modules/DKCloudID_USB_Android_V4.0(20211209).iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/app/DKCloudID_USB_Android_V4.0(20211209).app.iml" filepath="$PROJECT_DIR$/.idea/modules/app/DKCloudID_USB_Android_V4.0(20211209).app.iml" />
     </modules>
   </component>
 </project>
