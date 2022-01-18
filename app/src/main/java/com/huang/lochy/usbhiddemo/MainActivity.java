@@ -175,7 +175,7 @@ public class MainActivity extends Activity {
                 msgBuffer.append("USB连接断开！\r\n");
                 handler.sendEmptyMessage(0);
 
-                //finish();
+                finish();
                 //关闭USB
             }
         }
