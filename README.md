@@ -16,12 +16,12 @@ allprojects {
     }
 }
 ```
- **Step 2. 添加 implementation 'com.gitee.lochy:dkcloudid-usb-android-module:v1.0.2' 到dependency** 
+ **Step 2. 添加 implementation 'com.gitee.lochy:dkcloudid-usb-android-module:v1.0.3' 到dependency** 
 
 ```
 
 dependencies {
-        implementation 'com.gitee.lochy:dkcloudid-usb-android-module:v1.0.2'
+        implementation 'com.gitee.lochy:dkcloudid-usb-android-module:v1.0.3'
 }
 ```
 
