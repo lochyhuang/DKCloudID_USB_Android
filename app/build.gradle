@@ -4,7 +4,7 @@ android {
     compileSdkVersion 28
     buildToolsVersion '28.0.3'
     defaultConfig {
-        applicationId "com.huang.lochy.dkcid_v3"
+        applicationId "com.huang.lochy.dkcid_usb"
         minSdkVersion 18
         targetSdkVersion 28
         versionCode 1
@@ -22,12 +22,15 @@ android {
 }
 
 dependencies {
-    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'com.android.support:appcompat-v7:28.0.0'
     implementation 'com.android.support.constraint:constraint-layout:2.0.1'
     implementation 'com.android.support:design:28.0.0'
-    implementation 'com.gitee.lochy:dkcloudid-usb-android-module:v1.0.3'
     testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+
+    implementation 'com.gitee.lochy:dkcloudid-usb-android-module:v1.0.5'
 
     //固件升级文件选择要用到
     //implementation 'com.github.angads25:filepicker:1.1.1'

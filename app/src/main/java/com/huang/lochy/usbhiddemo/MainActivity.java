@@ -45,6 +45,8 @@ import com.dk.usbNfc.Card.Mifare;
 import com.dk.usbNfc.Card.Ntag21x;
 
 import java.io.File;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import static com.dk.usbNfc.DeviceManager.DeviceManager.CARD_TYPE_125K;
 
@@ -62,6 +64,8 @@ public class MainActivity extends Activity {
     private AlertDialog.Builder alertDialog = null;
 
     private StringBuffer msgBuffer;
+
+    final Semaphore semaphore = new Semaphore(1);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -193,6 +197,15 @@ public class MainActivity extends Activity {
 
             System.out.println("Activity接收到激活卡片回调：UID->" + StringTool.byteHexToSting(bytCardSn) + " ATS->" + StringTool.byteHexToSting(bytCarATS));
 
+            try {
+                if ( !semaphore.tryAcquire(10, TimeUnit.MILLISECONDS) ) {
+                    return;
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                return;
+            }
+
             final int cardTypeTemp = cardType;
             new Thread(new Runnable() {
                 @Override
@@ -213,6 +226,8 @@ public class MainActivity extends Activity {
                     } catch (DeviceNoResponseException e) {
                         e.printStackTrace();
                     }
+
+                    semaphore.release();
                 }
             }).start();
         }
@@ -302,6 +317,75 @@ public class MainActivity extends Activity {
                     msgBuffer.delete(0, msgBuffer.length());
                     msgBuffer.append("寻到CPU卡->UID:").append(cpuCard.uidToString()).append("\r\n");
                     handler.sendEmptyMessage(0);
+                    try{
+                        //选择深圳通主文件
+                        byte[] bytApduRtnData = cpuCard.transceive(SZTCard.getSelectMainFileCmdByte());
+                        if (bytApduRtnData.length <= 2) {
+                            System.out.println("不是深圳通卡，当成银行卡处理！");
+                            //选择储蓄卡交易文件
+                            String cpuCardType;
+                            bytApduRtnData = cpuCard.transceive(FinancialCard.getSelectDepositCardPayFileCmdBytes());
+                            if (bytApduRtnData.length <= 2) {
+                                System.out.println("不是储蓄卡，当成借记卡处理！");
+                                //选择借记卡交易文件
+                                bytApduRtnData = cpuCard.transceive(FinancialCard.getSelectDebitCardPayFileCmdBytes());
+                                if (bytApduRtnData.length <= 2) {
+                                    msgBuffer.append("未知CPU卡！");
+                                    handler.sendEmptyMessage(0);
+                                    return false;
+                                }
+                                else {
+                                    cpuCardType = "储蓄卡";
+                                }
+                            }
+                            else {
+                                cpuCardType = "借记卡";
+                            }
+
+                            bytApduRtnData = cpuCard.transceive(FinancialCard.getCardNumberCmdBytes());
+                            //提取银行卡卡号
+                            String cardNumberString = FinancialCard.extractCardNumberFromeRturnBytes(bytApduRtnData);
+                            if (cardNumberString == null) {
+                                msgBuffer.append("未知CPU卡！");
+                                handler.sendEmptyMessage(0);
+                                return false;
+                            }
+                            msgBuffer.append("储蓄卡卡号：" + cardNumberString);
+                            handler.sendEmptyMessage(0);
+
+                            //读交易记录
+                            System.out.println("发送APDU指令-读10条交易记录");
+                            for (int i = 1; i <= 10; i++) {
+                                bytApduRtnData = cpuCard.transceive(FinancialCard.getTradingRecordCmdBytes((byte) i));
+                                msgBuffer.append(FinancialCard.extractTradingRecordFromeRturnBytes(bytApduRtnData));
+                                handler.sendEmptyMessage(0);
+                            }
+                        }
+                        else {  //深圳通处理流程
+                            bytApduRtnData = cpuCard.transceive(SZTCard.getBalanceCmdByte());
+                            if (SZTCard.getBalance(bytApduRtnData) == null) {
+                                msgBuffer.append("未知CPU卡！");
+                                handler.sendEmptyMessage(0);
+                                System.out.println("未知CPU卡！");
+                                return false;
+                            }
+                            else {
+                                msgBuffer.append("深圳通余额：").append(SZTCard.getBalance(bytApduRtnData));
+                                handler.sendEmptyMessage(0);
+                                System.out.println("余额：" + SZTCard.getBalance(bytApduRtnData));
+                                //读交易记录
+                                System.out.println("发送APDU指令-读10条交易记录");
+                                for (int i = 1; i <= 10; i++) {
+                                    bytApduRtnData = cpuCard.transceive(SZTCard.getTradeCmdByte((byte) i));
+                                    msgBuffer.append("\r\n").append(SZTCard.getTrade(bytApduRtnData));
+                                    handler.sendEmptyMessage(0);
+                                }
+                            }
+                        }
+                    } catch (CardNoResponseException e) {
+                        e.printStackTrace();
+                        return false;
+                    }
                 }
                 break;
             case DeviceManager.CARD_TYPE_FELICA:  //寻到FeliCa
