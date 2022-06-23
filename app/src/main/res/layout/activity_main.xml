@@ -22,7 +22,7 @@
         android:layout_alignParentEnd="true"
         android:gravity="top"
         android:textSize="13sp"
-        android:text="点击搜索设备连接"
+        android:text=""
         android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
         android:layout_above="@+id/clearButton"
