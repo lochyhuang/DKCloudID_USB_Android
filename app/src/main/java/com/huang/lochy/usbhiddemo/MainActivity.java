@@ -23,7 +23,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
+import com.dk.usbNfc.Card.DESFire;
 import com.dk.usbNfc.Card.SamVIdCard;
+import com.dk.usbNfc.Card.Topaz;
 import com.dk.usbNfc.DKCloudID.DKCloudID;
 import com.dk.usbNfc.DKCloudID.IDCard;
 import com.dk.usbNfc.DKCloudID.IDCardData;
@@ -48,6 +50,8 @@ import java.io.File;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import static com.dk.usbNfc.DeviceManager.ComByteManager.ISO14443_P3;
+import static com.dk.usbNfc.DeviceManager.ComByteManager.ISO14443_P4;
 import static com.dk.usbNfc.DeviceManager.DeviceManager.CARD_TYPE_125K;
 
 public class MainActivity extends Activity {
@@ -56,8 +60,9 @@ public class MainActivity extends Activity {
     private MyTTS myTTS;
     static long time_start = 0;
     static long time_end = 0;
+    IDCard idCard = null;
 
-    private UsbNfcDevice usbNfcDevice = null;
+    private static UsbNfcDevice usbNfcDevice = null;
     private EditText msgText = null;
     private ProgressDialog readWriteDialog = null;
     private AlertDialog.Builder alertDialog = null;
@@ -79,103 +84,47 @@ public class MainActivity extends Activity {
         if (usbNfcDevice == null) {
             usbNfcDevice = new UsbNfcDevice(MainActivity.this);
             usbNfcDevice.setCallBack(deviceManagerCallback);
-
-            //USB权限广播
-            IntentFilter filter = new IntentFilter(UsbHidManager.ACTION_USB_PERMISSION);
-            //USB状态广播
-            filter.addAction(UsbManager.ACTION_USB_ACCESSORY_ATTACHED);
-            filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
-            filter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
-            registerReceiver(usbReceiver, filter);
         }
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    if (usbNfcDevice.usbHidManager.mDeviceConnection != null) {
-                        logViewln("USB设备已连接！");
-
-                        byte versionsByts = usbNfcDevice.getDeviceVersions();
-                        logViewln(String.format("\r\n设备版本：%02x", versionsByts));
-
-
-                        //OTA模式
-                        if ((versionsByts & 0xff) < (0x40 & 0xFF)) {
-                            startOTA();
-                        }
-                    }
-                    else if (usbNfcDevice.usbHidManager.mUsbDevice != null) {
-                        logViewln("没有权限！\r\n");
-                    }
-                    else {
-                        logViewln("未找到USB设备！\r\n");
-                    }
-                } catch (DeviceNoResponseException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
+        logViewln(null);
+        logViewln("USB_HID_NFC Demo v3.0.0 20220712");
     }
-
-    //用户USB权限及USB状态广播
-    private final BroadcastReceiver usbReceiver = new BroadcastReceiver() {
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if (UsbHidManager.ACTION_USB_PERMISSION.equals(action)) {
-                synchronized (this) {
-                    UsbDevice device = (UsbDevice) intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                    if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-                        if (device != null) {
-                            Log.i(TAG,"获得权限！");
-                            logViewln("获得权限！");
-
-                            new Thread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    while (usbNfcDevice.usbHidManager.mDeviceConnection != null);
-                                    try {
-                                        logViewln("USB设备已连接！");
-
-
-                                        byte versionsByts = usbNfcDevice.getDeviceVersions();
-                                        logViewln(String.format("设备版本：%02x", versionsByts));
-
-                                    } catch (DeviceNoResponseException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
-                            }).start();
-
-                        }
-                    } else {
-                        Log.i(TAG,"用户不允许USB访问设备！");
-                        logViewln("用户不允许USB访问设备！");
-
-                    }
-                }
-            }
-
-            //USB连接上手机时会发送广播android.hardware.usb.action.USB_STATE"及UsbManager.ACTION_USB_DEVICE_ATTACHED
-            if (action.equals("android.hardware.usb.action.USB_STATE") | action.equals(UsbManager.ACTION_USB_DEVICE_ATTACHED)) {//判断其中一个就可以了
-                Log.i(TAG, "USB已经连接！");
-                logViewln("USB已经连接！");
-
-                //打开USB
-                usbNfcDevice.usbHidManager.close();
-                usbNfcDevice.usbHidManager.open();
-            } else if (action.equals(UsbManager.ACTION_USB_DEVICE_DETACHED)) {//USB被拔出
-                Log.i(TAG,"USB连接断开！");
-                logViewln("USB连接断开！");
-
-                finish();
-                //关闭USB
-            }
-        }
-    };
 
     //设备操作类回调
     private DeviceManagerCallback deviceManagerCallback = new DeviceManagerCallback() {
+        @Override
+        public void onReceiveConnectionStatus(boolean blnIsConnection) {
+            if (blnIsConnection) {
+                Log.i(TAG,"USB连接成功！");
+                logViewln(null);
+                logViewln("USB连接成功！");
+
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            logViewln("USB设备已连接！");
+                            byte versionsByts = usbNfcDevice.getDeviceVersions();
+                            logViewln(String.format("设备版本：%02x", versionsByts));
+
+                            try {
+                                usbNfcDevice.closeRf();
+                            } catch (DeviceNoResponseException e) {
+                                e.printStackTrace();
+                            }
+                        } catch (DeviceNoResponseException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }).start();
+            }
+            else {
+                Log.i(TAG,"USB连接断开！");
+                logViewln(null);
+                logViewln("USB连接断开！");
+            }
+        }
+
         @Override
         //寻到卡片回调
         public void onReceiveRfnSearchCard(boolean blnIsSus, int cardType, byte[] bytCardSn, byte[] bytCarATS) {
@@ -248,6 +197,18 @@ public class MainActivity extends Activity {
 
             //读卡结束关闭进度条显示
             hidDialog();
+
+            //重复读
+//            new Thread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    try {
+//                        usbNfcDevice.closeRf();
+//                    } catch (DeviceNoResponseException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }).start();
         }
 
         //身份证云解析明文结果回调
@@ -257,6 +218,18 @@ public class MainActivity extends Activity {
 
             //显示身份证数据
             showIDCardData(idCardData);
+
+            //重复读
+//            new Thread(new Runnable() {
+//                @Override
+//                public void run() {
+//                    try {
+//                        usbNfcDevice.closeRf();
+//                    } catch (DeviceNoResponseException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//            }).start();
         }
     };
 
@@ -404,6 +377,28 @@ public class MainActivity extends Activity {
                     }
                 }
                 break;
+            case DeviceManager.CARD_TYPE_DESFire:   //寻到A CPU卡
+                final DESFire desFire = (DESFire) usbNfcDevice.getCard();
+                if (desFire != null) {
+                    msgBuffer.delete(0, msgBuffer.length());
+                    logViewln("寻到DESFire卡->UID:" + desFire.uidToString() + "");
+                    try {
+                        //发送获取随机数APDU命令：0084000008
+                        byte[] cmd = {0x00, (byte)0x84, 0x00, 0x00, 0x08};
+                        logViewln("发送获取随机数APDU命令：0084000008");
+                        byte[] rsp = desFire.transceive(cmd);
+                        logViewln("返回：" + StringTool.byteHexToSting(rsp));
+                    } catch (CardNoResponseException e) {
+                        e.printStackTrace();
+                    }
+                }
+                break;
+            case DeviceManager.CARD_TYPE_T1T:
+                final Topaz topaz = (Topaz) usbNfcDevice.getCard();
+                if (topaz != null) {
+                    logViewln("寻到T1T卡->UID:" + topaz.uidToString() + "");
+                }
+                break;
         }
         return true;
     }
@@ -487,8 +482,7 @@ public class MainActivity extends Activity {
         clearButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                msgBuffer.delete(0, msgBuffer.length());
-
+                logViewln(null);
             }
         });
 
@@ -496,7 +490,7 @@ public class MainActivity extends Activity {
         otaButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (usbNfcDevice.usbHidManager.mDeviceConnection == null) {
+                if (usbNfcDevice.usbHidManager.isClose()) {
                     msgText.setText("USB设备未连接！");
                     return;
                 }
@@ -519,6 +513,68 @@ public class MainActivity extends Activity {
                             }
 
                             startOTA();
+                        } catch (DeviceNoResponseException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }).start();
+            }
+        });
+
+        //打开自动寻卡开关
+        openAutoSearchCard.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (usbNfcDevice.usbHidManager.isClose()) {
+                    msgText.setText("USB设备未连接！");
+                    return;
+                }
+
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            //打开/关闭自动寻卡，100ms间隔，寻M1/UL卡
+                            boolean isSuc = usbNfcDevice.startAutoSearchCard((byte) 20, ISO14443_P4);
+                            if (isSuc) {
+                                logViewln(null);
+                                logViewln("自动寻卡已打开！");
+                            }
+                            else {
+                                logViewln(null);
+                                logViewln("自动寻卡已关闭！");
+                            }
+                        } catch (DeviceNoResponseException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }).start();
+            }
+        });
+
+        //关闭自动寻卡开关
+        closeAutoSearchCard.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (usbNfcDevice.usbHidManager.isClose()) {
+                    msgText.setText("USB设备未连接！");
+                    return;
+                }
+
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            //打开/关闭自动寻卡，100ms间隔，寻M1/UL卡
+                            boolean isSuc = usbNfcDevice.stoptAutoSearchCard();
+                            if (isSuc) {
+                                logViewln(null);
+                                logViewln("自动寻卡已关闭！");
+                            }
+                            else {
+                                logViewln(null);
+                                logViewln("自动寻卡已打开！");
+                            }
                         } catch (DeviceNoResponseException e) {
                             e.printStackTrace();
                         }
@@ -649,6 +705,7 @@ public class MainActivity extends Activity {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        Log.d(TAG, "onDestroy");
 
         if (readWriteDialog != null) {
             readWriteDialog.dismiss();

@@ -1,7 +1,7 @@
 package com.huang.lochy.usbhiddemo;
 
-import com.dk.usbNfc.Card.CpuCard;
 import com.dk.usbNfc.DeviceManager.DeviceManager;
+import com.dk.usbNfc.Card.CpuCard;
 
 /**
  * Created by Administrator on 2016/5/31.
