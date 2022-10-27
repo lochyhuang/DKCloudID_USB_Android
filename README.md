@@ -16,12 +16,12 @@ allprojects {
     }
 }
 ```
- **Step 2. 添加 implementation 'com.gitee.lochy:dkcloudid-usb-android-module:v1.0.5' 到dependency** 
+ **Step 2. 添加 implementation 'com.gitee.lochy:dkcloudid-usb-android-module:v2.0.3' 到dependency** 
 
 ```
 
 dependencies {
-        implementation 'com.gitee.lochy:dkcloudid-usb-android-module:v1.0.5'
+        implementation 'com.gitee.lochy:dkcloudid-usb-android-module:v2.0.3'
 }
 ```
 
@@ -40,8 +40,11 @@ dependencies {
 
 ```
 
-    usbNfcDevice = new UsbNfcDevice(MainActivity.this);
-    usbNfcDevice.setCallBack(deviceManagerCallback);
+	//usb_nfc设备初始化
+	if (usbNfcDevice == null) {
+		usbNfcDevice = new UsbNfcDevice(MainActivity.this);
+		usbNfcDevice.setCallBack(deviceManagerCallback);
+	}
 ```
 
  **Step 5. 添加读卡回调和读卡代码** 
@@ -51,6 +54,39 @@ dependencies {
     //设备操作类回调
     private DeviceManagerCallback deviceManagerCallback = new DeviceManagerCallback() {
         @Override
+        public void onReceiveConnectionStatus(boolean blnIsConnection) {
+            if (blnIsConnection) {
+                Log.i(TAG,"USB连接成功！");
+                logViewln(null);
+                logViewln("USB连接成功！");
+
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            logViewln("USB设备已连接！");
+                            byte versionsByts = usbNfcDevice.getDeviceVersions();
+                            logViewln(String.format("设备版本：%02x", versionsByts));
+
+                            try {
+                                usbNfcDevice.closeRf();
+                            } catch (DeviceNoResponseException e) {
+                                e.printStackTrace();
+                            }
+                        } catch (DeviceNoResponseException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }).start();
+            }
+            else {
+                Log.i(TAG,"USB连接断开！");
+                logViewln(null);
+                logViewln("USB连接断开！");
+            }
+        }
+
+        @Override
         //寻到卡片回调
         public void onReceiveRfnSearchCard(boolean blnIsSus, int cardType, byte[] bytCardSn, byte[] bytCarATS) {
             super.onReceiveRfnSearchCard(blnIsSus, cardType, bytCardSn, bytCarATS);
@@ -58,68 +94,59 @@ dependencies {
                 return;
             }
 
-            System.out.println("Activity接收到激活卡片回调：UID->" + StringTool.byteHexToSting(bytCardSn) + " ATS->" + StringTool.byteHexToSting(bytCarATS));
+            Log.d(TAG, "Activity接收到激活卡片回调：UID->" + StringTool.byteHexToSting(bytCardSn) + " ATS->" + StringTool.byteHexToSting(bytCarATS));
 
             final int cardTypeTemp = cardType;
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    boolean isReadWriteCardSuc;
-                    try {
-                        isReadWriteCardSuc = readWriteCardDemo(cardTypeTemp);
-
-                        //打开蜂鸣器提示读卡完成
-                        if (isReadWriteCardSuc) {
-                            usbNfcDevice.openBeep(50, 50, 3);  //读写卡成功快响3声
-                        }
-                        else {
-                            //usbNfcDevice.openBeep(100, 100, 2); //读写卡失败慢响2声
-                            //读卡失败，关闭一次天线让读卡器自动进行重读
-                            usbNfcDevice.closeRf();
-                        }
-                    } catch (DeviceNoResponseException e) {
-                        e.printStackTrace();
-                    }
+				    //普通IC卡读写示例
+                    //readWriteCardDemo(cardTypeTemp);
                 }
             }).start();
         }
-    };
-    
-    //读写卡Demo
-    private synchronized boolean readWriteCardDemo(int cardType) {
-        if (cardType == DeviceManager.CARD_TYPE_ISO4443_B) {  //寻到 B cpu卡、身份证
-            final Iso14443bCard iso14443bCard = (Iso14443bCard) usbNfcDevice.getCard();
-            if (iso14443bCard != null) {
-                SamVIdCard samVIdCard = new SamVIdCard(usbNfcDevice);
-                idCard = new IDCard(samVIdCard);
 
-                int cnt = 0;
-                do {
-                    try {
-                        /**
-                         * 获取身份证数据
-                         * 注意：此方法为同步阻塞方式，需要一定时间才能返回身份证数据，期间身份证不能离开读卡器！
-                         */
-                        IDCardData idCardData = idCard.getIDCardData();
+        //身份证开始请求云解析回调
+        @Override
+        public void onReceiveSamVIdStart(byte[] initData) {
+            super.onReceiveSamVIdStart(initData);
 
-                        /**
-                         * 显示身份证数据
-                         */
-                        showIDCardData(idCardData);
-                        
-                        //返回读取成功
-                        return true;
-                    } catch (DKCloudIDException e) {   //服务器返回异常，重复5次解析
-                        e.printStackTrace();
-                    }
-                    catch (CardNoResponseException e) {    //卡片读取异常，直接退出，需要重新读卡
-                        e.printStackTrace();
-                        return false;
-                    }
-                }while ( cnt++ < 5 );  //如果服务器返回异常则重复读5次直到成功
+            Log.d(TAG, "开始解析");
+            logViewln(null);
+            logViewln("正在读卡，请勿移动身份证!");
+        }
+
+        //身份证云解析进度回调
+        @Override
+        public void onReceiveSamVIdSchedule(int rate) {
+            super.onReceiveSamVIdSchedule(rate);
+            showReadWriteDialog("正在读取身份证信息,请不要移动身份证", rate);
+            if (rate == 100) {
+                time_end = System.currentTimeMillis();
+
+                /**
+                 * 这里已经完成读卡，可以拿开身份证了，在此提示用户读取成功或者打开蜂鸣器提示可以拿开身份证了
+                 */
+                //myTTS.speak("读取成功");
             }
         }
-        
-        return false;
-    }
+
+        //身份证云解析异常回调
+        @Override
+        public void onReceiveSamVIdException(String msg) {
+            super.onReceiveSamVIdException(msg);
+
+            //显示错误信息
+            logViewln(msg);
+        }
+
+        //身份证云解析明文结果回调
+        @Override
+        public void onReceiveIDCardData(IDCardData idCardData) {
+            super.onReceiveIDCardData(idCardData);
+
+            //显示身份证数据
+            showIDCardData(idCardData);
+        }
+    };
 ```
