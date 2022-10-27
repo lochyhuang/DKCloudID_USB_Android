@@ -87,7 +87,6 @@ public class MainActivity extends Activity {
         }
 
         logViewln(null);
-        logViewln("USB_HID_NFC Demo v3.0.0 20220712");
     }
 
     //设备操作类回调
