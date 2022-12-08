@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="DesignSurface">
+    <option name="filePathToZoomLevelMap">
+      <map>
+        <entry key="..\:/androidProject/USBHIDDemo/DKCloudID_USB_Android/app/src/main/res/layout/activity_main.xml" value="0.3536458333333333" />
+      </map>
+    </option>
+  </component>
   <component name="JavadocGenerationManager">
     <option name="OUTPUT_DIRECTORY" value="$PROJECT_DIR$/../../../DKProject/资料 文档/文档/API DOC" />
     <option name="OTHER_OPTIONS" value="-encoding UTF-8 -charset UTF-8 -windowtitle “模块API” -link http://docs.Oracle.com/javase/7/docs/api" />

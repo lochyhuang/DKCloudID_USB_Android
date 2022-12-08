@@ -1,7 +1,7 @@
 # DKCloudID_USB_Android
 
 #### 介绍
-深圳市德科物联技术有限公司的USB身份证阅读器Demo, 支持DK26ME、DK26ME-ANT、DK200ZK等模块。产品信息请访问[德科官网](http://www.derkiot.com/)。
+深圳市德科物联技术有限公司的USB身份证阅读器Demo, 支持DK26ME、DK26ME-ANT、DK200ZK等模块。更多产品信息请访问[德科官网](http://www.derkiot.com/)。
 
 ### 如何集成到项目中
  **Step 1. Add the JitPack repository to your build file**
@@ -16,12 +16,12 @@ allprojects {
     }
 }
 ```
- **Step 2. 添加 implementation 'com.gitee.lochy:dkcloudid-usb-android-module:v2.0.3' 到dependency** 
+ **Step 2. 添加 implementation 'com.gitee.lochy:dkcloudid-usb-android-module:v2.1.0' 到dependency** 
 
 ```
 
 dependencies {
-        implementation 'com.gitee.lochy:dkcloudid-usb-android-module:v2.0.3'
+        implementation 'com.gitee.lochy:dkcloudid-usb-android-module:v2.1.0'
 }
 ```
 

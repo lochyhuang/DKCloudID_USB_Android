@@ -22,7 +22,10 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 
+import com.dk.log.DKLog;
+import com.dk.log.DKLogCallback;
 import com.dk.usbNfc.Card.DESFire;
 import com.dk.usbNfc.Card.SamVIdCard;
 import com.dk.usbNfc.Card.Topaz;
@@ -46,7 +49,10 @@ import com.dk.usbNfc.Card.Iso15693Card;
 import com.dk.usbNfc.Card.Mifare;
 import com.dk.usbNfc.Card.Ntag21x;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -60,12 +66,15 @@ public class MainActivity extends Activity {
     private MyTTS myTTS;
     static long time_start = 0;
     static long time_end = 0;
-    IDCard idCard = null;
+    private TextView delayTextView = null;
 
     private static UsbNfcDevice usbNfcDevice = null;
     private EditText msgText = null;
     private ProgressDialog readWriteDialog = null;
     private AlertDialog.Builder alertDialog = null;
+
+    private static String server_delay = "";
+    private static int net_status = 1;
 
     private StringBuffer msgBuffer;
 
@@ -74,11 +83,14 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        //语音初始化
-        myTTS = new MyTTS(this);
-
         //UI初始化
         initUI();
+
+        //日志初始化
+        DKLog.setLogCallback(logCallback);
+
+        //语音初始化
+        myTTS = new MyTTS(this);
 
         //usb_nfc设备初始化
         if (usbNfcDevice == null) {
@@ -87,7 +99,82 @@ public class MainActivity extends Activity {
         }
 
         logViewln(null);
+
+        //网络质量监控Demo，集成时可以去掉
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    String lost = new String();
+                    String delay = new String();
+
+                    try {
+                        Process p = Runtime.getRuntime().exec("ping -c 1 -w 10 " + "www.dkcloudid.cn");
+                        net_status = p.waitFor();
+                        //DKLog.d(TAG, "Process:" + net_status );
+
+                        if (net_status == 0) {
+                            BufferedReader buf = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                            String str = new String();
+                            while (true) {
+                                try {
+                                    if (!((str = buf.readLine()) != null)) break;
+                                } catch (IOException e) {
+                                    DKLog.e(TAG, e);
+                                }
+
+                                if (str.contains("avg")) {
+                                    int i = str.indexOf("/", 20);
+                                    int j = str.indexOf(".", i);
+
+                                    delay = str.substring(i + 1, j);
+                                    server_delay = delay;
+                                }
+                            }
+
+                            //DKLog.d(TAG, "延迟:" + delay + "ms");
+                        }
+                        else {
+                            //DKLog.d(TAG, "网络未连接！");
+                        }
+                    } catch (Exception e) {
+                        DKLog.e(TAG, e);
+                    }
+
+                    showNETDelay();
+
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                    }
+                }
+            }
+        }).start();
     }
+
+    //日志回调
+    private DKLogCallback logCallback = new DKLogCallback() {
+        @Override
+        public void onReceiveLogI(String tag, String msg) {
+            super.onReceiveLogI(tag, msg);
+            Log.i(tag, msg);
+            logViewln("[I] " + msg);
+        }
+
+        @Override
+        public void onReceiveLogD(String tag, String msg) {
+            super.onReceiveLogD(tag, msg);
+            Log.d(tag, msg);
+            logViewln("[D] " + msg);
+        }
+
+        @Override
+        public void onReceiveLogE(String tag, String msg) {
+            super.onReceiveLogE(tag, msg);
+            Log.e(tag, msg);
+            logViewln("[E] " + msg);
+        }
+    };
 
     //设备操作类回调
     private DeviceManagerCallback deviceManagerCallback = new DeviceManagerCallback() {
@@ -468,6 +555,10 @@ public class MainActivity extends Activity {
         Button openAutoSearchCard = (Button)findViewById(R.id.openAutoSearchCard);
         Button closeAutoSearchCard = (Button)findViewById(R.id.closeAutoSearchCard);
         Button otaButton = (Button)findViewById(R.id.ota_button);
+        delayTextView = findViewById(R.id.delayTextView);
+
+        msgText.setKeyListener(null);
+        msgText.setTextIsSelectable(true);
 
         readWriteDialog = new ProgressDialog(MainActivity.this);
         readWriteDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
@@ -593,25 +684,20 @@ public class MainActivity extends Activity {
             public void run() {
                 msgText.setText("解析成功，读卡用时:" + (time_end - time_start) + "ms\r\n" + theIDCardData.toString());
 
-                //获取指纹数据
-                String fingerprintString = "";
-                if (theIDCardData.fingerprintBytes != null && theIDCardData.fingerprintBytes.length > 0) {
-                    fingerprintString = "\r\n指纹数据：\r\n" + StringTool.byteHexToSting(theIDCardData.fingerprintBytes);
-                }
-
                 SpannableString ss = new SpannableString(msgText.getText().toString()+"[smile]");
                 //得到要显示图片的资源
-                Drawable d = new BitmapDrawable(theIDCardData.PhotoBmp); //Drawable.createFromPath("mnt/sdcard/photo.bmp");
-                //设置高度
-                d.setBounds(0, 0, d.getIntrinsicWidth() * 10, d.getIntrinsicHeight() * 10);
-                //跨度底部应与周围文本的基线对齐
-                ImageSpan span = new ImageSpan(d, ImageSpan.ALIGN_BASELINE);
-                //附加图片
-                ss.setSpan(span, msgText.getText().length(),msgText.getText().length()+"[smile]".length(), Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
-                msgText.setText(ss);
-
-                //显示指纹数据
-                msgText.append(fingerprintString);
+                Drawable d = new BitmapDrawable(theIDCardData.PhotoBmp);//Drawable.createFromPath("mnt/sdcard/photo.bmp");
+                if (d != null) {
+                    //设置高度
+                    d.setBounds(0, 0, d.getIntrinsicWidth(), d.getIntrinsicHeight());
+                    //跨度底部应与周围文本的基线对齐
+                    ImageSpan span = new ImageSpan(d, ImageSpan.ALIGN_BASELINE);
+                    //附加图片
+                    ss.setSpan(span, msgText.getText().length(),msgText.getText().length()+"[smile]".length(), Spannable.SPAN_INCLUSIVE_EXCLUSIVE);
+                    msgText.setText(ss);
+                    //msgTextView.setText("\r\n");
+                    //Log.d(TAG, idCardData.PhotoBmp);
+                }
             }
         });
     }
@@ -651,6 +737,37 @@ public class MainActivity extends Activity {
         });
     }
 
+    //显示网络延迟
+    private void showNETDelay() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if ( (net_status == 0) && (server_delay != null) && (server_delay.length() > 0) ) {
+                    int delay = Integer.parseInt(server_delay);
+                    String pj = "优";
+                    if (delay < 30) {
+                        pj = "优";
+                        delayTextView.setTextColor(0xF000ff00);
+                    } else if (delay < 50) {
+                        pj = "良";
+                        delayTextView.setTextColor(0xF0EEC900);
+                    } else if (delay < 100) {
+                        pj = "差";
+                        delayTextView.setTextColor(0xF0FF0000);
+                    } else {
+                        pj = "极差";
+                        delayTextView.setTextColor(0xF0B22222);
+                    }
+                    delayTextView.setText("网络延迟：" + server_delay + "ms " + " 等级：" + pj);
+                }
+                else {
+                    delayTextView.setTextColor(0xF0B22222);
+                    delayTextView.setText("网络未连接！");
+                }
+            }
+        });
+    }
+
     private void logViewln(String string) {
         final String msg = string;
         runOnUiThread(new Runnable() {
@@ -661,9 +778,9 @@ public class MainActivity extends Activity {
                     return;
                 }
 
-                if (msgText.length() > 1000) {
-                    msgText.setText("");
-                }
+//                if (msgText.length() > 1000) {
+//                    msgText.setText("");
+//                }
                 msgText.append(msg + "\r\n");
                 int offset = msgText.getLineCount() * msgText.getLineHeight();
                 if(offset > msgText.getHeight()){
